@@ -1,6 +1,6 @@
 # PSAU Admission System
 
-AI-assisted admission management system for Pampanga State Agricultural University (PSAU).
+AI-assisted admission system at Pampanga State Agricultural University (PSAU).
 
 ## Overview
 
