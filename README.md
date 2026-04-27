@@ -1,225 +1,89 @@
 # PSAU Admission System
 
-A fully AI-powered, secure, and automated Admission System for Pampanga State Agricultural University (PSAU).
+AI-assisted admission management system for Pampanga State Agricultural University (PSAU).
 
-## Project Overview
+## Overview
 
-The PSAU Admission System provides an end-to-end solution for managing the university's admission process, from application submission to enrollment. The system is built using PHP for both frontend and backend functionality, MySQL for database storage, and Firebase for authentication, real-time updates, and notification services.
+This project handles the full admission lifecycle: applicant registration, application submission, verification, exam scheduling, scoring, course assignment, enrollment scheduling, and enrollment completion.
 
-## Features
+The system is implemented in PHP with server-rendered pages and JavaScript modules, and integrates external services for database, email, and AI features.
 
-- **User Registration and Authentication**: Secure registration with OTP verification via Firebase Authentication
-- **Application Submission**: PDF upload and automated validation using AI
-- **Progress Tracking**: Real-time status updates through Firebase Realtime Database
-- **Admin Dashboard**: For reviewing applications, scheduling exams, and managing the admission process
-- **Automated Notifications**: Email and SMS notifications for important steps in the admission process
-- **Course Selection and Assignment**: Course preference selection and admin assignment
-- **Enrollment Scheduling**: Final step to complete the admission process
+## Current Stack (From Code)
 
-## Technical Stack
+- Backend: PHP `>=7.4` (`composer.json`)
+- Frontend: HTML, CSS, JavaScript
+- Database: MySQL
+  - Production default/fallback is Google Cloud SQL host (`34.170.34.174`)
+  - Environment-variable driven configuration in `includes/db_connect.php`
+- Hosting/deployment config: Render (`render.yaml`, Dockerfiles, Procfile)
+- Email delivery: Firebase-hosted email function via `firebase/firebase_email.php`
+- Security controls: session auth, password hashing, reCAPTCHA token gating, OTP expiry/rate-limiting helpers
+- AI integrations: chatbot and recommendation proxies in `public/ai/*_proxy.php`
 
-- **Backend**: PHP 7.4+
-- **Frontend**: HTML5, CSS3, JavaScript (combined within PHP files)
-- **Database**: MySQL (via XAMPP)
-- **Authentication**: Firebase Authentication with SMS OTP
-- **Security**: Firebase reCAPTCHA v3
-- **Real-time Updates**: Firebase Realtime Database
-- **Email Notifications**: Firebase Cloud Functions with Gmail
-- **SMS Notifications**: Firebase Authentication SMS
-- **PDF Processing**: Python with OCR (Tesseract)
+## Important Clarifications
 
-## Installation and Setup
+- OTP is email-based in current flows (`public/send_email_otp.php`, `admin/send_admin_otp.php`).
+- No active SMS sending flow is used for OTP in current implementation.
+- Some old references to SMS may still appear in static text, but operational OTP endpoints send email.
 
-### Prerequisites
+## Main Modules
 
-1. XAMPP (with PHP 7.4+ and MySQL)
-2. Firebase account with Blaze plan (for Cloud Functions)
-3. Python 3.7+ with pip
-4. Node.js and npm (for Firebase Functions)
+- `public/`: applicant-side pages and endpoints
+  - registration/login/forgot password flows
+  - application progress and submission features
+  - AI chatbot/recommendation pages and proxy endpoints
+- `admin/`: admin-side management pages and actions
+  - application review and verification
+  - exam scheduling and reminders
+  - bulk/manual score handling
+  - enrollment scheduling/completion
+- `includes/`: shared backend utilities
+  - database connection and validation
+  - auth/session helpers
+  - OTP attempt/rate limiting
+- `firebase/`: Firebase config and email integration
 
-### Database Setup
+## Database Configuration
 
-1. Start XAMPP and ensure MySQL service is running
-2. Import the database schema from `/database/psau_admission.sql`
-3. Default credentials are:
-   - Host: localhost
-   - Username: root
-   - Password: (blank)
-   - Database: psau_admission
+The app reads DB values from environment variables (recommended):
 
-### Firebase Setup
+- `DB_HOST`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASS`
+- `DB_PORT`
 
-1. Create a Firebase project
-2. Enable Authentication with Email/Password and Phone
-3. Set up Realtime Database
-4. Set up Cloud Functions with the following environment variables:
-   ```
-   firebase functions:config:set gmail.email="jericogutierrezsison12@gmail.com" gmail.password="crsh iejc lhwz gasu"
-   ```
-5. Deploy functions from the `/functions` directory
+Fallback values in `includes/db_connect.php` currently point to:
 
-### Python Setup
+- Host: `34.170.34.174`
+- Port: `3306`
+- Database: `psau_admission`
+- User: `root`
 
-Install required Python packages:
-```
-pip install pytesseract pdf2image
-```
+On Render (`RENDER=true`), DB connection options enable MySQL SSL-related settings for production compatibility.
 
-You also need to install Tesseract OCR engine on your system.
+## Local Setup
 
-### System Setup
+1. Place project in your web root (for example, `xampp/htdocs`).
+2. Configure DB environment variables (or adjust fallback values carefully).
+3. Import your database schema (project docs reference `database/psau_admission.sql`).
+4. Ensure runtime-writable directories exist and are writable (for example, `uploads`, `images`, `logs` where applicable).
+5. Open `public/` entry pages from your local server.
 
-1. Clone or download the project to your XAMPP htdocs directory
-2. Configure the database connection in `/includes/db_connect.php` if needed
-3. Configure the Firebase project details in your client-side scripts
-4. Ensure the `/uploads` directory is writable by the web server
+## Deployment Notes
 
-## System Architecture
+- `render.yaml` includes production environment keys used by this codebase.
+- Root has multiple deployment artifacts (`Dockerfile`, `Dockerfile.minimal`, `Dockerfile.simple`, `Procfile`) that support different deployment approaches.
+- `health.php` is available for health checks.
 
-- **Public Interface**: User-facing pages in `/public` directory
-- **Admin Interface**: Administration pages in `/admin` directory
-- **Backend Functions**: Reusable PHP scripts in `/includes` directory
-- **Firebase Functions**: Cloud functions in `/functions` directory
-- **Python Scripts**: PDF processing in `/python` directory
+## Repository Structure
 
-## Security Features
-
-- Password hashing using PHP's native `password_hash()`
-- Firebase reCAPTCHA v3 for login protection
-- OTP verification for user registration
-- Secure storage of Gmail credentials in Firebase environment variables
-- Role-based access control
-
-## Credits
-
-Developed for Pampanga State Agricultural University (PSAU) Admission System.
+- `admin/` Admin interface and admission workflow actions
+- `public/` Applicant interface and API-like endpoints
+- `includes/` Shared PHP business logic/utilities
+- `firebase/` Firebase and email integration code
+- `images/`, `uploads/`, `logo/` Assets and uploaded files
 
 ## License
 
 Proprietary - All rights reserved.
-
-# PSAU Admission System - Firebase Email Integration
-
-This guide explains how to set up and use the Firebase email integration for the PSAU Admission System.
-
-## Overview
-
-The system now uses Firebase Cloud Functions for all email notifications, including:
-- Application verification emails
-- Application rejection/resubmission emails
-- Test emails
-
-## Setup Instructions
-
-### 1. Create a Firebase Project
-
-1. Go to [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add project" and follow the setup steps
-3. Name your project (e.g., "psau-admission-system")
-4. Follow the prompts to complete setup
-
-### 2. Set Up Firebase Cloud Functions
-
-1. Install the Firebase CLI:
-```
-npm install -g firebase-tools
-```
-
-2. Login to Firebase:
-```
-firebase login
-```
-
-3. Initialize your project:
-```
-mkdir functions
-cd functions
-firebase init functions
-```
-
-4. Create the Cloud Functions code in your `functions` directory:
-   - `index.js`: Contains the Cloud Functions for email sending
-   - `package.json`: Contains dependencies
-
-5. Install dependencies:
-```
-cd functions
-npm install
-```
-
-6. Deploy functions:
-```
-firebase deploy --only functions
-```
-
-7. After deployment, Firebase will show the URL for your Cloud Function. Copy this URL.
-
-### 3. Update Firebase Configuration
-
-1. Open `firebase_email.php` in your project
-2. Update the Firebase configuration:
-```php
-$firebase_config = [
-    'api_key' => 'YOUR_FIREBASE_API_KEY', // From Firebase console
-    'project_id' => 'YOUR_PROJECT_ID',
-    'email_function_url' => 'YOUR_CLOUD_FUNCTION_URL'
-];
-```
-
-## Testing the Integration
-
-1. Use the Firebase Console to test your cloud functions
-2. Monitor the cloud function logs in Firebase Console to confirm proper email delivery
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Email not sending**:
-   - Check your Firebase Cloud Function logs in the Firebase Console
-   - Verify your API key is correct
-   - Check that the Cloud Function URL is correct
-
-2. **Function deployment errors**:
-   - Make sure you've installed all dependencies
-   - Check that your Firebase project is properly set up
-   - Verify your `package.json` has the right dependencies
-
-3. **Integration errors**:
-   - Check PHP error logs for detailed error messages
-   - Make sure the Firebase email functions are being included properly
-   - Verify that cURL is enabled in your PHP configuration
-
-## File Structure
-
-- `firebase_email.php`: Main integration file with email functions
-- `functions/`: Contains Cloud Function code for deployment
-  - `index.js`: Cloud Functions for email sending
-  - `package.json`: Node.js dependencies
-
-## Using the Integration
-
-To send an email from your PHP code:
-
-```php
-// Include the Firebase email functions
-require_once 'firebase_email.php';
-
-// Send a verification email
-$user = [
-    'email' => 'user@example.com',
-    'first_name' => 'John',
-    'last_name' => 'Doe'
-];
-$result = send_verification_email($user);
-
-// Send a resubmission email
-$reason = "Missing documents";
-$result = send_resubmission_email($user, $reason);
-
-// Send a custom email
-$to = 'user@example.com';
-$subject = 'Custom Email';
-$message = '<p>This is a custom email message.</p>';
-$result = firebase_send_email($to, $subject, $message);
-``` 
